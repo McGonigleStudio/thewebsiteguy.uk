@@ -17,5 +17,8 @@
             "themes/websiteguy"
         ],
         "ignoredPackages": []
+    },
+    "dependencies": {
+        "preline": "^2.1.0"
     }
 }

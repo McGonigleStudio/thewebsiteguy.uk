@@ -2,12 +2,18 @@
 module.exports = {
   content: [
     '**/**/*.htm',
+    '../../../node_modules/preline/dist/*.js',
   ],
   theme: {
-    extend: {},
+    fontFamily: {
+      'sans': ['Montserrat', 'sans-serif'],
+    },
+    extend: {
+      
+    },
   },
   plugins: [
-  	 require('@tailwindcss/typography'),
-        require("daisyui"),
+    require('@tailwindcss/forms'),
+    require('preline/plugin'),
   ],
 }
