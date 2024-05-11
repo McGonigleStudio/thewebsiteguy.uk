@@ -1,16 +1,17 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="en" class="scroll-smooth bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-100">
     <head>
         <meta charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>{% placeholder page_title default %}{{ this.page.title }}{% endplaceholder %}</title>
+        <title>{% placeholder page_title default %}{{ this.page.title }}{% endplaceholder %} | The Website Guy</title>
         {% partial "meta/styles" %}
         {% partial "meta/seo" %}
+        <link rel="shortcut icon" href="{{'assets/images/favicon.png'| theme}}" type="image/x-icon">
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
-        <meta name="generator" content="Winter CMS">
+        <meta name="description" content="Professional and afdfordable pay monthly websites from The Website Guy">
     </head>
     {% set pageId = this.page.id %}
     {% set pageTitle = this.page.title %}
@@ -20,4 +21,4 @@
     {% if pageTitle is empty %}
         {% set pageTitle = page.title %}
     {% endif %}
-    <body class="page-{{ pageId }} layout-{{ this.layout.id }} bg-gray-50 dark:bg-slate-950">
+    <body class="page-{{ pageId }} layout-{{ this.layout.id }} ">

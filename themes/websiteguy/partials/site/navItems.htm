@@ -1,0 +1,28 @@
+<div>
+<a 
+    class="{% if this.page.id == 'home' %} relative inline-block text-black before:absolute before:bottom-0.5 before:start-0 before:-z-[1] before:w-full before:h-1 before:bg-pink-400 dark:text-white{% else %} inline-block text-black hover:text-gray-600 dark:text-white dark:hover:text-neutral-300 {% endif %}" 
+    href="{{ 'home'| page }}" >
+    Home
+</a>
+</div>
+<div>
+<a 
+    class="{% if this.page.id == 'services' %} relative inline-block text-black before:absolute before:bottom-0.5 before:start-0 before:-z-[1] before:w-full before:h-1 before:bg-pink-400 dark:text-white{% else %} inline-block text-black hover:text-gray-600 dark:text-white dark:hover:text-neutral-300 {% endif %}" 
+    href="{{ 'services'| page }}" >
+    Services
+</a>
+</div>
+<div>
+<a 
+    class="{% if this.page.id == 'about' %} relative inline-block text-black before:absolute before:bottom-0.5 before:start-0 before:-z-[1] before:w-full before:h-1 before:bg-pink-400 dark:text-white{% else %} inline-block text-black hover:text-gray-600 dark:text-white dark:hover:text-neutral-300 {% endif %}" 
+    href="{{ 'about'| page }}" >
+    About
+</a>
+</div>
+<div>
+<a 
+    class="{% if this.page.id == 'blog' %} relative inline-block text-black before:absolute before:bottom-0.5 before:start-0 before:-z-[1] before:w-full before:h-1 before:bg-pink-400 dark:text-white{% else %} inline-block text-black hover:text-gray-600 dark:text-white dark:hover:text-neutral-300 {% endif %}" 
+    href="{{ 'Blog'| page }}" >
+    Blog
+</a>
+</div>
