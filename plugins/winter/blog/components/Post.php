@@ -1,26 +1,24 @@
-<?php
+<?php namespace Winter\Blog\Components;
 
-namespace Winter\Blog\Components;
-
-use BackendAuth;
-use Cms\Classes\ComponentBase;
-use Cms\Classes\Page;
 use Event;
+use BackendAuth;
+use Cms\Classes\Page;
+use Cms\Classes\ComponentBase;
 use Winter\Blog\Models\Post as BlogPost;
 
 class Post extends ComponentBase
 {
     /**
-     * The post model used for display.
+     * @var Winter\Blog\Models\Post The post model used for display.
      */
-    public ?BlogPost $post = null;
+    public $post;
 
     /**
-     * Reference to the page name for linking to categories.
+     * @var string Reference to the page name for linking to categories.
      */
-    public string $categoryPage = '';
+    public $categoryPage;
 
-    public function componentDetails(): array
+    public function componentDetails()
     {
         return [
             'name'        => 'winter.blog::lang.settings.post_title',
@@ -28,7 +26,7 @@ class Post extends ComponentBase
         ];
     }
 
-    public function defineProperties(): array
+    public function defineProperties()
     {
         return [
             'slug' => [
@@ -101,7 +99,7 @@ class Post extends ComponentBase
         if (!$this->checkEditor()) {
             $query->isPublished();
         }
-
+        
         $post = $query->first();
 
         /*

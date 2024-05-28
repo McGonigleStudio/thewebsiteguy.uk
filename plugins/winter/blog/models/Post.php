@@ -1,10 +1,9 @@
-<?php
-
-namespace Winter\Blog\Models;
+<?php namespace Winter\Blog\Models;
 
 use Backend\Models\User;
 use BackendAuth;
 use Carbon\Carbon;
+use Cms\Classes\Controller;
 use Cms\Classes\Page as CmsPage;
 use Cms\Classes\Theme;
 use Html;
@@ -12,21 +11,16 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Lang;
 use Markdown;
 use Model;
-use System\Models\File;
 use Url;
 use ValidationException;
 use Winter\Blog\Classes\TagProcessor;
-use Winter\Pages\Classes\MenuItem;
-use Winter\Sitemap\Classes\DefinitionItem;
 use Winter\Storm\Database\NestedTreeScope;
-use Winter\Storm\Router\Router;
 
 /**
  * Class Post
  */
 class Post extends Model
 {
-    use \Winter\Blog\Traits\Urlable;
     use \Winter\Storm\Database\Traits\Validation;
 
     public $table = 'winter_blog_posts';
@@ -83,32 +77,27 @@ class Post extends Model
         'updated_at desc'   => 'winter.blog::lang.sorting.updated_desc',
         'published_at asc'  => 'winter.blog::lang.sorting.published_asc',
         'published_at desc' => 'winter.blog::lang.sorting.published_desc',
-        'random'            => 'winter.blog::lang.sorting.random',
+        'random'            => 'winter.blog::lang.sorting.random'
     ];
 
     /*
      * Relations
      */
     public $belongsTo = [
-        'user' => [User::class],
+        'user' => ['Backend\Models\User']
     ];
 
     public $belongsToMany = [
         'categories' => [
-            Category::class,
+            'Winter\Blog\Models\Category',
             'table' => 'winter_blog_posts_categories',
-            'order' => 'name',
+            'order' => 'name'
         ]
     ];
 
     public $attachMany = [
-        'featured_images' => [
-            File::class,
-            'order' => 'sort_order',
-        ],
-        'content_images'  => [
-            File::class,
-        ],
+        'featured_images' => ['System\Models\File', 'order' => 'sort_order'],
+        'content_images'  => ['System\Models\File']
     ];
 
     /**
@@ -170,6 +159,35 @@ class Post extends Model
                'published_at' => Lang::get('winter.blog::lang.post.published_validation')
             ]);
         }
+    }
+
+    /**
+     * Sets the "url" attribute with a URL to this object.
+     * @param string $pageName
+     * @param Controller $controller
+     * @param array $params Override request URL parameters
+     *
+     * @return string
+     */
+    public function setUrl($pageName, $controller, $params = [])
+    {
+        $params = array_merge([
+            'id'   => $this->id,
+            'slug' => $this->slug,
+        ], $params);
+
+        if (empty($params['category'])) {
+            $params['category'] = $this->categories->count() ? $this->categories->first()->slug : null;
+        }
+
+        // Expose published year, month and day as URL parameters.
+        if ($this->published) {
+            $params['year']  = $this->published_at->format('Y');
+            $params['month'] = $this->published_at->format('m');
+            $params['day']   = $this->published_at->format('d');
+        }
+
+        return $this->url = $controller->pageUrl($pageName, $params);
     }
 
     /**
@@ -384,63 +402,6 @@ class Post extends Model
         return Html::limit($this->content_html, 600);
     }
 
-    /**
-     * Get the list of pages that can be used to display the post
-     */
-    public function getCmsPageOptions(): array
-    {
-        $result = [];
-
-        $theme = Theme::getActiveTheme();
-        $pages = CmsPage::listInTheme($theme, true)->withComponent('blogPost', function ($component) {
-            if (!preg_match('/{{\s*:/', $component->property('slug'))) {
-                return false;
-            }
-            return true;
-        });
-
-        foreach ($pages as $page) {
-            $result[$page->baseFileName] = $page->title;
-        }
-
-        return $result;
-    }
-
-    /**
-     * Accessor for the $post->title attribute
-     */
-    public function getTitleAttribute($value)
-    {
-        if (!$this->is_published && !\App::runningInBackend()) {
-            $value = '🔒 ' . $value;
-        }
-        return $value;
-    }
-
-    /**
-     * Accessor for the $post->is_published attribute
-     */
-    public function getIsPublishedAttribute(): bool
-    {
-        return $this->published && $this->published_at && $this->published_at <= Carbon::now();
-    }
-
-    /**
-     * Accessor for the $post->preview_page attribute
-     */
-    public function getPreviewPageAttribute(): ?string
-    {
-        $page = null;
-
-        if (!empty($this->metadata['preview_page'])) {
-            $page = $this->metadata['preview_page'];
-        } else {
-            $page = array_first(array_keys($this->getCmsPageOptions()));
-        }
-
-        return $page;
-    }
-
     //
     // Next / Previous
     //
@@ -521,15 +482,18 @@ class Post extends Model
      *   Optional, false if omitted.
      * - cmsPages - a list of CMS pages (objects of the Cms\Classes\Page class), if the item type requires a CMS page reference to
      *   resolve the item URL.
+     *
+     * @param string $type Specifies the menu item type
+     * @return array Returns an array
      */
-    public static function getMenuTypeInfo(string $type): array
+    public static function getMenuTypeInfo($type)
     {
         $result = [];
 
         if ($type == 'blog-post') {
             $references = [];
 
-            $posts = self::select('id', 'title')->orderBy('title')->get();
+            $posts = self::orderBy('title')->get();
             foreach ($posts as $post) {
                 $references[$post->id] = $post->title;
             }
@@ -591,6 +555,63 @@ class Post extends Model
     }
 
     /**
+     * Get the list of pages that can be used to display the post
+     */
+    public function getCmsPageOptions(): array
+    {
+        $result = [];
+
+        $theme = Theme::getActiveTheme();
+        $pages = CmsPage::listInTheme($theme, true)->withComponent('blogPost', function ($component) {
+            if (!preg_match('/{{\s*:/', $component->property('slug'))) {
+                return false;
+            }
+            return true;
+        });
+
+        foreach ($pages as $page) {
+            $result[$page->baseFileName] = $page->title;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Accessor for the $post->title attribute
+     */
+    public function getTitleAttribute($value)
+    {
+        if (!$this->is_published && !\App::runningInBackend()) {
+            $value = '🔒 ' . $value;
+        }
+        return $value;
+    }
+
+    /**
+     * Accessor for the $post->is_published attribute
+     */
+    public function getIsPublishedAttribute(): bool
+    {
+        return $this->published && $this->published_at && $this->published_at <= Carbon::now();
+    }
+
+    /**
+     * Accessor for the $post->preview_page attribute
+     */
+    public function getPreviewPageAttribute(): ?string
+    {
+        $page = null;
+
+        if (!empty($this->metadata['preview_page'])) {
+            $page = $this->metadata['preview_page'];
+        } else {
+            $page = array_first(array_keys($this->getCmsPageOptions()));
+        }
+
+        return $page;
+    }
+
+    /**
      * Handler for the pages.menuitem.resolveItem event.
      * Returns information about a menu item. The result is an array
      * with the following keys:
@@ -602,86 +623,75 @@ class Post extends Model
      * - items - an array of arrays with the same keys (url, isActive, items) + the title key.
      *   The items array should be added only if the $item's $nesting property value is TRUE.
      *
-     * @param DefinitionItem|MenuItem $item Specifies the menu item.
+     * @param \Winter\Pages\Classes\MenuItem $item Specifies the menu item.
+     * @param \Cms\Classes\Theme $theme Specifies the current theme.
+     * @param string $url Specifies the current page URL, normalized, in lower case
+     * The URL is specified relative to the website root, it includes the subdirectory name, if any.
+     * @return mixed Returns an array. Returns null if the item cannot be resolved.
      */
-    public static function resolveMenuItem(object $item, string $currentUrl, Theme $theme): ?array
+    public static function resolveMenuItem($item, $url, $theme)
     {
         $result = null;
 
-        // Items must have a reference to a CMS page
-        if (!$item->cmsPage) {
-            return null;
-        }
-        $cmsPage = CmsPage::loadCached($theme, $item->cmsPage);
-        if (!$cmsPage) {
-            return null;
-        }
-
         if ($item->type == 'blog-post') {
-            // Attempt to get the post record for a specific post menu item
-            if (!$item->reference) {
-                return null;
-            }
-            $post = self::find($item->reference);
-            if (!$post) {
-                return null;
+            if (!$item->reference || !$item->cmsPage) {
+                return;
             }
 
-            $pageUrl = $post->getUrl($cmsPage);
-            if (!$pageUrl) {
-                return null;
+            $category = self::find($item->reference);
+            if (!$category) {
+                return;
             }
+
+            $pageUrl = self::getPostPageUrl($item->cmsPage, $category, $theme);
+            if (!$pageUrl) {
+                return;
+            }
+
             $pageUrl = Url::to($pageUrl);
 
-            $result = [
-                'url' => $pageUrl,
-                'isActive' => $pageUrl === $currentUrl,
-                'mtime' => $post->updated_at,
-            ];
-
-            $localizedUrls = $post->getLocalizedUrls($cmsPage);
-            if (count($localizedUrls) > 1) {
-                $result['alternateLinks'] = $localizedUrls;
-            }
-
-        } elseif ($item->type == 'all-blog-posts') {
+            $result = [];
+            $result['url'] = $pageUrl;
+            $result['isActive'] = $pageUrl == $url;
+            $result['mtime'] = $category->updated_at;
+        }
+        elseif ($item->type == 'all-blog-posts') {
             $result = [
                 'items' => []
             ];
 
-            $posts = self::isPublished()->orderBy('title')->get();
+            $posts = self::isPublished()
+            ->orderBy('title')
+            ->get();
+
             foreach ($posts as $post) {
                 $postItem = [
                     'title' => $post->title,
-                    'url'   => Url::to($post->getUrl($cmsPage)),
+                    'url'   => self::getPostPageUrl($item->cmsPage, $post, $theme),
                     'mtime' => $post->updated_at
                 ];
 
-                $postItem['isActive'] = $postItem['url'] === $currentUrl;
-
-                $localizedUrls = $post->getLocalizedUrls($cmsPage);
-                if (count($localizedUrls) > 1) {
-                    $postItem['alternateLinks'] = $localizedUrls;
-                }
+                $postItem['isActive'] = $postItem['url'] == $url;
 
                 $result['items'][] = $postItem;
             }
-
-        } elseif ($item->type == 'category-blog-posts') {
-            if (!$item->reference) {
-                return null;
+        }
+        elseif ($item->type == 'category-blog-posts') {
+            if (!$item->reference || !$item->cmsPage) {
+                return;
             }
 
             $category = Category::find($item->reference);
             if (!$category) {
-                return null;
+                return;
             }
 
             $result = [
                 'items' => []
             ];
 
-            $query = self::isPublished()->orderBy('title');
+            $query = self::isPublished()
+            ->orderBy('title');
 
             $categories = $category->getAllChildrenAndSelf()->lists('id');
             $query->whereHas('categories', function($q) use ($categories) {
@@ -693,16 +703,11 @@ class Post extends Model
             foreach ($posts as $post) {
                 $postItem = [
                     'title' => $post->title,
-                    'url'   => Url::to($post->getUrl($cmsPage)),
+                    'url'   => self::getPostPageUrl($item->cmsPage, $post, $theme),
                     'mtime' => $post->updated_at
                 ];
 
-                $postItem['isActive'] = $postItem['url'] === $currentUrl;
-
-                $localizedUrls = $post->getLocalizedUrls($cmsPage);
-                if (count($localizedUrls) > 1) {
-                    $postItem['alternateLinks'] = $localizedUrls;
-                }
+                $postItem['isActive'] = $postItem['url'] == $url;
 
                 $result['items'][] = $postItem;
             }
@@ -712,29 +717,41 @@ class Post extends Model
     }
 
     /**
-     * Get the URL parameters for this record, optionally using the provided CMS page.
+     * Returns URL of a post page.
+     *
+     * @param $pageCode
+     * @param $category
+     * @param $theme
      */
-    public function getUrlParams(?CmsPage $page = null): array
+    protected static function getPostPageUrl($pageCode, $category, $theme)
     {
-        $firstCategory = $this->categories->first();
+        $page = CmsPage::loadCached($theme, $pageCode);
+        if (!$page) {
+            return;
+        }
+
+        $properties = $page->getComponentProperties('blogPost');
+        if (!isset($properties['slug'])) {
+            return;
+        }
+
+        /*
+         * Extract the routing parameter name from the category filter
+         * eg: {{ :someRouteParam }}
+         */
+        if (!preg_match('/^\{\{([^\}]+)\}\}$/', $properties['slug'], $matches)) {
+            return;
+        }
+
+        $paramName = substr(trim($matches[1]), 1);
         $params = [
-            'id'   => $this->id,
-            'slug' => $this->slug,
-            'category' => $firstCategory ? $firstCategory->slug : null,
+            $paramName => $category->slug,
+            'year'  => $category->published_at->format('Y'),
+            'month' => $category->published_at->format('m'),
+            'day'   => $category->published_at->format('d')
         ];
+        $url = CmsPage::url($page->getBaseFileName(), $params);
 
-        // Expose published year, month and day as URL parameters.
-        if ($this->published) {
-            $params['year']  = $this->published_at->format('Y');
-            $params['month'] = $this->published_at->format('m');
-            $params['day']   = $this->published_at->format('d');
-        }
-
-        $paramName = $this->getParamNameFromComponentProperty($page, 'blogPost', 'slug');
-        if ($paramName) {
-            $params[$paramName] = $this->slug;
-        }
-
-        return $params;
+        return $url;
     }
 }

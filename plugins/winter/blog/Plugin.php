@@ -1,6 +1,4 @@
-<?php
-
-namespace Winter\Blog;
+<?php namespace Winter\Blog;
 
 use Backend;
 use Backend\Models\UserRole;
@@ -12,10 +10,7 @@ use Winter\Blog\Models\Post;
 
 class Plugin extends PluginBase
 {
-    /**
-     * Returns information about this plugin.
-     */
-    public function pluginDetails(): array
+    public function pluginDetails()
     {
         return [
             'name'        => 'winter.blog::lang.plugin.name',
@@ -27,23 +22,17 @@ class Plugin extends PluginBase
         ];
     }
 
-    /**
-     * Registers the components provided by this plugin.
-     */
-    public function registerComponents(): array
+    public function registerComponents()
     {
         return [
-            \Winter\Blog\Components\Post::class       => 'blogPost',
-            \Winter\Blog\Components\Posts::class      => 'blogPosts',
-            \Winter\Blog\Components\Categories::class => 'blogCategories',
-            \Winter\Blog\Components\RssFeed::class    => 'blogRssFeed'
+            'Winter\Blog\Components\Post'       => 'blogPost',
+            'Winter\Blog\Components\Posts'      => 'blogPosts',
+            'Winter\Blog\Components\Categories' => 'blogCategories',
+            'Winter\Blog\Components\RssFeed'    => 'blogRssFeed'
         ];
     }
 
-    /**
-     * Registers the permissions provided by this plugin.
-     */
-    public function registerPermissions(): array
+    public function registerPermissions()
     {
         return [
             'winter.blog.manage_settings' => [
@@ -79,10 +68,7 @@ class Plugin extends PluginBase
         ];
     }
 
-    /**
-     * Registers the backend navigation items provided by this plugin.
-     */
-    public function registerNavigation(): array
+    public function registerNavigation()
     {
         return [
             'blog' => [
@@ -117,10 +103,7 @@ class Plugin extends PluginBase
         ];
     }
 
-    /**
-     * Registers the settings provided by this plugin.
-     */
-    public function registerSettings(): array
+    public function registerSettings()
     {
         return [
             'blog' => [
@@ -139,7 +122,7 @@ class Plugin extends PluginBase
     /**
      * Register method, called when the plugin is first registered.
      */
-    public function register(): void
+    public function register()
     {
         /*
          * Register the image tag processing callback
@@ -160,23 +143,12 @@ class Plugin extends PluginBase
         });
     }
 
-    /**
-     * Boot method, called when the plugin is first booted.
-     */
-    public function boot(): void
-    {
-        $this->extendWinterPagesPlugin();
-    }
-
-    /**
-     * Extends the Winter.Pages plugin
-     */
-    protected function extendWinterPagesPlugin(): void
+    public function boot()
     {
         /*
          * Register menu items for the Winter.Pages plugin
          */
-        Event::listen('pages.menuitem.listTypes', function () {
+        Event::listen('pages.menuitem.listTypes', function() {
             return [
                 'blog-category'       => 'winter.blog::lang.menuitem.blog_category',
                 'all-blog-categories' => 'winter.blog::lang.menuitem.all_blog_categories',
@@ -186,27 +158,21 @@ class Plugin extends PluginBase
             ];
         });
 
-        Event::listen('pages.menuitem.getTypeInfo', function ($type) {
-            switch ($type) {
-                case 'blog-category':
-                case 'all-blog-categories':
-                    return Category::getMenuTypeInfo($type);
-                case 'blog-post':
-                case 'all-blog-posts':
-                case 'category-blog-posts':
-                    return Post::getMenuTypeInfo($type);
+        Event::listen('pages.menuitem.getTypeInfo', function($type) {
+            if ($type == 'blog-category' || $type == 'all-blog-categories') {
+                return Category::getMenuTypeInfo($type);
+            }
+            elseif ($type == 'blog-post' || $type == 'all-blog-posts' || $type == 'category-blog-posts') {
+                return Post::getMenuTypeInfo($type);
             }
         });
 
-        Event::listen('pages.menuitem.resolveItem', function ($type, $item, $url, $theme) {
-            switch ($type) {
-                case 'blog-category':
-                case 'all-blog-categories':
-                    return Category::resolveMenuItem($item, $url, $theme);
-                case 'blog-post':
-                case 'all-blog-posts':
-                case 'category-blog-posts':
-                    return Post::resolveMenuItem($item, $url, $theme);
+        Event::listen('pages.menuitem.resolveItem', function($type, $item, $url, $theme) {
+            if ($type == 'blog-category' || $type == 'all-blog-categories') {
+                return Category::resolveMenuItem($item, $url, $theme);
+            }
+            elseif ($type == 'blog-post' || $type == 'all-blog-posts' || $type == 'category-blog-posts') {
+                return Post::resolveMenuItem($item, $url, $theme);
             }
         });
     }

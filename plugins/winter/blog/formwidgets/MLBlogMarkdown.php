@@ -1,6 +1,4 @@
-<?php
-
-namespace Winter\Blog\FormWidgets;
+<?php namespace Winter\Blog\FormWidgets;
 
 use Winter\Blog\Models\Post;
 use Winter\Translate\Models\Locale;

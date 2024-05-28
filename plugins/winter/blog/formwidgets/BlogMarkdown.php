@@ -1,17 +1,16 @@
-<?php
+<?php namespace Winter\Blog\FormWidgets;
 
-namespace Winter\Blog\FormWidgets;
-
-use Backend\FormWidgets\MarkdownEditor;
-use Exception;
-use Input;
 use Lang;
+use Input;
 use Response;
-use System\Models\File;
-use SystemException;
-use ValidationException;
 use Validator;
 use Winter\Blog\Models\Post as PostModel;
+use Backend\Classes\FormWidgetBase;
+use Backend\FormWidgets\MarkdownEditor;
+use System\Models\File;
+use ValidationException;
+use SystemException;
+use Exception;
 
 /**
  * Special markdown editor for the Create/Edit Post form.

@@ -1,30 +1,29 @@
-<?php
+<?php namespace Winter\Blog\Components;
 
-namespace Winter\Blog\Components;
-
-use Cms\Classes\ComponentBase;
+use Db;
+use Carbon\Carbon;
 use Cms\Classes\Page;
-use Illuminate\Support\Collection;
+use Cms\Classes\ComponentBase;
 use Winter\Blog\Models\Category as BlogCategory;
 
 class Categories extends ComponentBase
 {
     /**
-     * A collection of categories to display
+     * @var Collection A collection of categories to display
      */
-    public ?Collection $categories = null;
+    public $categories;
 
     /**
-     * Reference to the page name for linking to categories.
+     * @var string Reference to the page name for linking to categories.
      */
-    public string $categoryPage = '';
+    public $categoryPage;
 
     /**
-     * Reference to the current category slug.
+     * @var string Reference to the current category slug.
      */
-    public string $currentCategorySlug = '';
+    public $currentCategorySlug;
 
-    public function componentDetails(): array
+    public function componentDetails()
     {
         return [
             'name'        => 'winter.blog::lang.settings.category_title',
@@ -32,7 +31,7 @@ class Categories extends ComponentBase
         ];
     }
 
-    public function defineProperties(): array
+    public function defineProperties()
     {
         return [
             'slug' => [
@@ -71,8 +70,9 @@ class Categories extends ComponentBase
 
     /**
      * Load all categories or, depending on the <displayEmpty> option, only those that have blog posts
+     * @return mixed
      */
-    protected function loadCategories(): Collection
+    protected function loadCategories()
     {
         $categories = BlogCategory::with('posts_count')->getNested();
         if (!$this->property('displayEmpty')) {
@@ -98,8 +98,9 @@ class Categories extends ComponentBase
 
     /**
      * Sets the URL on each category according to the defined category page
+     * @return void
      */
-    protected function linkCategories(Collection $categories): Collection
+    protected function linkCategories($categories)
     {
         return $categories->each(function ($category) {
             $category->setUrl($this->categoryPage, $this->controller);

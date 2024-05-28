@@ -1,6 +1,4 @@
-<?php
-
-namespace Winter\Blog\Components;
+<?php namespace Winter\Blog\Components;
 
 use Cms\Classes\ComponentBase;
 use Cms\Classes\Page;
